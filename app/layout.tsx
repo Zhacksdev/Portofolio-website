@@ -18,9 +18,8 @@ const spaceGrotesk = Space_Grotesk({
 })
 
 export const metadata: Metadata = {
-  title: 'Portfolio - Frontend Developer',
-  description: 'Minimalist portfolio showcasing web development projects',
-  generator: 'v0.app',
+  title: 'Works Journey — Zhacksdev Portfolio',
+description: 'A curated selection of modern, responsive, and high-performance digital projects.',
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-icon.png",
