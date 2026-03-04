@@ -4,6 +4,10 @@ import { supabase } from '@/lib/supabase'
 import type { Project } from '@/lib/supabase'
 import { ArrowUpRight } from 'lucide-react'
 
+// ⬇️ penting: paksa halaman selalu dynamic (anti cache)
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // react-icons (npm i react-icons)
 import {
   SiNextdotjs,
@@ -54,11 +58,24 @@ function formatType(type: string | null | undefined) {
   return t.charAt(0).toUpperCase() + t.slice(1)
 }
 
-async function getFeaturedProjects() {
+// helper: timeout biar gak ngegantung
+async function withTimeout<T>(promise: Promise<T>, ms = 15000): Promise<T> {
+  const controller = new AbortController()
+  const t = setTimeout(() => controller.abort(), ms)
+
+  try {
+    // supabase-js v2 otomatis pakai fetch; kita gak bisa inject signal langsung dari sini.
+    // Tapi masih berguna kalau nanti kamu ubah createClient fetch override.
+    return await promise
+  } finally {
+    clearTimeout(t)
+  }
+}
+
+async function getFeaturedProjects(): Promise<Project[]> {
   const { data, error } = await supabase
     .from('projects')
     .select(
-      // ambil field yang dipakai UI saja (hindari mockups_b64)
       'id,title,slug,description,tags,type,stack,cover_image_b64,featured,status,created_at'
     )
     .eq('status', 'published')
@@ -70,7 +87,7 @@ async function getFeaturedProjects() {
     return []
   }
 
-  return data as Project[]
+  return (data ?? []) as Project[]
 }
 
 export default async function Page() {
@@ -83,9 +100,7 @@ export default async function Page() {
       {/* Hero */}
       <section className="container mx-auto px-6 pt-28 pb-14 md:pt-32 md:pb-20">
         <div className="max-w-4xl">
-          <p className="text-sm text-muted-foreground mb-4">
-            Portfolio
-          </p>
+          <p className="text-sm text-muted-foreground mb-4">Portfolio</p>
 
           <h1 className="text-4xl md:text-6xl font-display font-bold tracking-tight leading-tight text-balance">
             Frontend Developer & Creative Technologist
@@ -121,29 +136,29 @@ export default async function Page() {
 
         {projects.length === 0 ? (
           <div className="text-center py-16 md:py-20 border border-border rounded-2xl bg-card">
-            <p className="text-muted-foreground">No projects yet. Check back soon.</p>
+            <p className="text-muted-foreground">
+              No projects yet. Check back soon.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {projects.map((project) => {
               const coverSrc = b64ToDataUrl((project as any).cover_image_b64)
-              const tags = Array.isArray((project as any).tags) ? ((project as any).tags as string[]) : []
-              const stack = Array.isArray((project as any).stack) ? ((project as any).stack as string[]) : []
+              const tags = Array.isArray((project as any).tags)
+                ? ((project as any).tags as string[])
+                : []
+              const stack = Array.isArray((project as any).stack)
+                ? ((project as any).stack as string[])
+                : []
               const type = formatType((project as any).type)
               const featured = Boolean((project as any).featured)
 
               return (
-                <Link
-                  key={project.id}
-                  href={`/projects/${project.slug}`}
-                  className="group block"
-                >
-                  <div className="rounded-2xl border border-border bg-card overflow-hidden transition
-                                  hover:shadow-lg hover:-translate-y-0.5">
+                <Link key={project.id} href={`/projects/${project.slug}`} className="group block">
+                  <div className="rounded-2xl border border-border bg-card overflow-hidden transition hover:shadow-lg hover:-translate-y-0.5">
                     {/* Cover */}
                     <div className="relative aspect-[4/3] bg-muted overflow-hidden">
                       {coverSrc ? (
-                        // data-url lebih aman pakai img biasa
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={coverSrc}
@@ -201,7 +216,9 @@ export default async function Page() {
                             )
                           })}
                           {stack.length > 6 ? (
-                            <span className="text-xs text-muted-foreground">+{stack.length - 6}</span>
+                            <span className="text-xs text-muted-foreground">
+                              +{stack.length - 6}
+                            </span>
                           ) : null}
                         </div>
                       ) : (

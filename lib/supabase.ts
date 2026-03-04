@@ -3,7 +3,18 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit) {
+  const controller = new AbortController()
+  const t = setTimeout(() => controller.abort(), 15000) // 15 detik
+
+  return fetch(input, { ...init, signal: controller.signal })
+    .finally(() => clearTimeout(t))
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: { persistSession: false },
+  global: { fetch: fetchWithTimeout },
+})
 
 export type ProjectType = 'web' | 'mobile' | 'desktop' | 'backend' | 'uiux' | 'other'
 export type ProjectStatus = 'draft' | 'published'
@@ -20,11 +31,9 @@ export type Project = {
   tags: string[] | null
   stack: string[] | null
 
-  // gambar disimpan di DB sebagai base64
   cover_image_b64: string | null
   mockups_b64: string[] | null
 
-  // legacy (opsional)
   cover_image: string | null
   images: string[] | null
   tech_stack: string[] | null

@@ -19,7 +19,7 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: 'Works Journey — Zhacksdev Portfolio',
-description: 'A curated selection of modern, responsive, and high-performance digital projects.',
+description: 'A curated selection of modern, responsive, and high-performance digital  projects.',
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-icon.png",
